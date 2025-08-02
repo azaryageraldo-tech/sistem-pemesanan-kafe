@@ -1,13 +1,18 @@
-import './assets/main.css'
+import './assets/main.css';
 
-import axios from 'axios'
-import { createPinia } from 'pinia'
-import { createApp } from 'vue'
-import Toast from 'vue-toastification'; // <-- Impor Toast
-import 'vue-toastification/dist/index.css'; // <-- Impor CSS-nya
+import axios from 'axios';
+import { createPinia } from 'pinia';
+import { createApp } from 'vue';
+import Toast from 'vue-toastification';
+import 'vue-toastification/dist/index.css';
 
-import App from './App.vue'
-import router from './router'
+import App from './App.vue';
+import router from './router';
+
+// <-- TAMBAHKAN BARIS DI BAWAH INI -->
+// Atur baseURL default untuk semua permintaan Axios
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+// <-- AKHIR DARI BARIS BARU -->
 
 // Cek token saat aplikasi dimuat
 const token = localStorage.getItem('token');
@@ -41,8 +46,11 @@ app.use(Toast, {
 
 // --- BLOK INTERCEPTOR BARU ---
 // Dapatkan auth store setelah pinia di-inisialisasi
-import { useAuthStore } from './stores/auth'
-const authStore = useAuthStore();
+import { useAuthStore } from './stores/auth';
+const pinia = createPinia();
+app.use(pinia);
+const authStore = useAuthStore(pinia);
+
 
 axios.interceptors.response.use(
   response => response,
