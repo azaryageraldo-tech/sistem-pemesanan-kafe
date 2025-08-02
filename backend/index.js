@@ -8,6 +8,7 @@ const menuRoutes = require('./routes/menuRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const authRoutes = require('./routes/authRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 const httpServer = http.createServer(app); // <-- Buat server HTTP dari aplikasi Express
@@ -42,6 +43,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/public', express.static('public'));
 app.use('/api/reports', reportRoutes);
+app.use('/api/ai', aiRoutes);
+
 
 // Listener untuk koneksi Socket.IO
 io.on('connection', (socket) => {

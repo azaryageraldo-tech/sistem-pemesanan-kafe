@@ -1,7 +1,8 @@
 <script setup>
 import axios from 'axios';
 import { computed, onMounted, ref } from 'vue';
-import MenuCardSkeleton from '../components/MenuCardSkeleton.vue'; // <-- Impor komponen skeleton
+import AiChatbot from '../components/AiChatbot.vue';
+import MenuCardSkeleton from '../components/MenuCardSkeleton.vue';
 import { useCartStore } from '../stores/cart';
 
 const cartStore = useCartStore();
@@ -9,27 +10,32 @@ const menus = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
 
+// State untuk filter & pencarian
 const categories = ['Semua', 'Makanan', 'Minuman', 'Snack'];
 const selectedCategory = ref('Semua');
 const searchQuery = ref('');
 
+// State untuk rekomendasi AI satu arah
+const isAiLoading = ref(false);
+const aiRecommendation = ref('');
+
+// Computed property untuk filter & pencarian
 const filteredMenus = computed(() => {
   let filtered = menus.value;
-
   if (selectedCategory.value !== 'Semua') {
     filtered = filtered.filter(menu => menu.category === selectedCategory.value);
   }
-
   if (searchQuery.value) {
     filtered = filtered.filter(menu =>
       menu.name.toLowerCase().includes(searchQuery.value.toLowerCase())
     );
   }
-
   return filtered;
 });
 
+// Fungsi untuk mengambil data menu
 const fetchMenus = async () => {
+  isLoading.value = true;
   try {
     const response = await axios.get('http://localhost:3000/api/menus');
     menus.value = response.data.data;
@@ -41,8 +47,27 @@ const fetchMenus = async () => {
   }
 };
 
+// Fungsi untuk menambah item ke keranjang
 const addToCart = (menu) => {
   cartStore.addItem(menu);
+};
+
+// Fungsi untuk rekomendasi AI satu arah
+const fetchAiRecommendation = async () => {
+  isAiLoading.value = true;
+  aiRecommendation.value = '';
+  try {
+    const payload = {
+      menuList: menus.value,
+      cartItems: cartStore.items
+    };
+    const response = await axios.post('http://localhost:3000/api/ai/recommendation', payload);
+    aiRecommendation.value = response.data.recommendation;
+  } catch {
+    aiRecommendation.value = 'Maaf, asisten AI sedang sibuk. Coba lagi nanti.';
+  } finally {
+    isAiLoading.value = false;
+  }
 };
 
 onMounted(() => {
@@ -53,7 +78,19 @@ onMounted(() => {
 <template>
   <main class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-6">
-      <h1 class="text-3xl md:text-4xl font-extrabold text-center mb-8 text-gray-800">Pilih Menu Favorit Anda</h1>
+      <h1 class="text-3xl md:text-4xl font-extrabold text-center mb-2 text-gray-800">Pilih Menu Favorit Anda</h1>
+      
+      <div class="text-center mb-8">
+        <button @click="fetchAiRecommendation" :disabled="isAiLoading" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold py-2 px-5 rounded-full shadow-lg hover:scale-105 transform transition-transform disabled:opacity-50 disabled:cursor-wait">
+          ✨ {{ isAiLoading ? 'Meminta Saran...' : 'Minta Rekomendasi AI' }}
+        </button>
+      </div>
+
+      <div v-if="aiRecommendation" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg mb-8 relative transition-opacity duration-300">
+        <p class="font-bold">Saran dari Asisten AI:</p>
+        <p>{{ aiRecommendation }}</p>
+        <button @click="aiRecommendation = ''" class="absolute top-2 right-2 text-yellow-600 hover:text-yellow-800 text-2xl font-bold">&times;</button>
+      </div>
 
       <div class="flex flex-col md:flex-row gap-4 mb-8">
         <div class="relative flex-grow">
@@ -82,7 +119,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Loading Skeleton -->
       <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         <MenuCardSkeleton v-for="n in 8" :key="n" />
       </div>
@@ -131,8 +167,6 @@ onMounted(() => {
       </div>
     </div>
   </main>
-</template>
 
-<style scoped>
-/* Kosongkan karena styling sudah ditangani oleh Tailwind */
-</style>
+  <AiChatbot v-if="!isLoading" :menu-list="menus" />
+</template>
